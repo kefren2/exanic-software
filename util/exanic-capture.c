@@ -480,8 +480,9 @@ int main(int argc, char *argv[])
     unsigned long file_size = 0, file_size_limit = 0;
     char file_name_buf[4096];
     int c;
+    uint64_t stop_after_packets = -1, total_packets = 0;
 
-    while ((c = getopt(argc, argv, "i:w:s:C:F:pHNh?")) != -1)
+    while ((c = getopt(argc, argv, "i:w:s:c:C:F:pHNh?")) != -1)
     {
         switch (c)
         {
@@ -497,6 +498,9 @@ int main(int argc, char *argv[])
             case 'C':
                 /* as per tcpdump */
                 file_size_limit = 1000000L * atoi(optarg);
+                break;
+            case 'c':
+                stop_after_packets = atoi(optarg);
                 break;
             case 'F':
                 /* formats as per editcap */
@@ -648,6 +652,9 @@ int main(int argc, char *argv[])
                                                   snaplen, savefp);
                 if (flush)
                     fflush(savefp);
+                total_packets++;
+                if (total_packets > stop_after_packets)
+                    break;
             }
         }
         else
@@ -677,6 +684,9 @@ int main(int argc, char *argv[])
                 else
                     printf("unknown error\n");
             }
+            total_packets++;
+            if (total_packets > stop_after_packets)
+                break;
         }
 
         /* Update counters */
@@ -719,12 +729,13 @@ err_open_savefile:
 
 usage_error:
     fprintf(stderr, "Usage: %s -i interface\n", argv[0]);
-    fprintf(stderr, "           [-w savefile] [-s snaplen] [-C file_size]\n");
+    fprintf(stderr, "           [-w savefile] [-s snaplen] [-C file_size] [-c max_packets]\n");
     fprintf(stderr, "           [-F file_format] [-p] [-H] [-N] [filter...]\n");
     fprintf(stderr, "  -i: specify Linux interface (e.g. eth0) or ExaNIC port name (e.g. exanic0:0)\n");
     fprintf(stderr, "  -w: dump frames to given file in specified format (- for stdout)\n");
     fprintf(stderr, "  -s: maximum data length to capture\n");
     fprintf(stderr, "  -C: file size at which to start a new save file (in millions of bytes)\n");
+    fprintf(stderr, "  -c: stop after max_packets\n");
     fprintf(stderr, "  -F: file format [pcap|erf] (default is pcap)\n");
     fprintf(stderr, "  -p: do not attempt to put interface in promiscuous mode\n");
     fprintf(stderr, "  -H: use hardware timestamps (requires exanic-clock-sync or exanic-ptpd)\n");
